@@ -1,0 +1,2 @@
+-e git+https://github.com/yegortokmakov/solrbackup@29b3fb1ed7f66afa3d4b5e83ec495511f9e4af53#egg=solrbackup-master
+
