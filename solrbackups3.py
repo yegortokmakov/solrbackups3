@@ -40,7 +40,7 @@ def backup(args):
 
 def restore(args):
     print 'Downloading backup'
-    subprocess.check_call(["aws", "s3", "cp", "s3://" + args.filename, args.location])
+    subprocess.check_call(["aws", "s3", "cp", "s3://%s/%s" % (args.bucket, args.filename), args.location])
 
     snapshot_directory = "%s/snapshot.%s" % (args.location, time.time())
     os.mkdir(snapshot_directory)
