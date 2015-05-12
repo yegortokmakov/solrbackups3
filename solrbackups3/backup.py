@@ -111,7 +111,7 @@ def list(args):
     subprocess.check_call(["aws", "s3", "ls", "s3://" + args.bucket])
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Backup Solr to S3', add_help=False)
 
     subparsers = parser.add_subparsers(help='sub-command help')
@@ -136,3 +136,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     args.func(args)
+
+if __name__ == '__main__':
+    main()
