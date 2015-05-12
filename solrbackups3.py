@@ -7,15 +7,22 @@ import time
 import shutil
 import subprocess
 import sys
+import solrbackup
 
 
 def backup(args):
     snapshot_directory = "%s/snapshot.%s" % (args.location, time.time())
-    os.mkdir(snapshot_directory)
+    os.makedirs(snapshot_directory)
     print 'Snapshot directory created: %s' % snapshot_directory
 
     print 'Backup start...'
-    subprocess.check_call(["python", "src/solrbackup-master/solrbackup/solrbackup.py", "http://%s:%s/solr" % (args.host, args.port), snapshot_directory])
+
+    class data:
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
+
+    solrbackup_options = data(verbose=False, use_checksum=True, cores=None, delete=False, cloud=False, reserve=False)
+    solrbackup.download_cores("http://%s:%s/solr" % (args.host, args.port), snapshot_directory, solrbackup_options)
 
     archive_name = '%s/solr.%s.tgz' % (args.location, time.strftime("%Y%m%d.%H%M%S"))
     print 'Archiving to %s' % archive_name
@@ -40,13 +47,19 @@ def backup(args):
 
 def restore(args):
     print 'Downloading backup'
-    subprocess.check_call(["aws", "s3", "cp", "s3://%s/%s" % (args.bucket, args.filename), args.location])
+    if args.filename == 'latest':
+        filename = subprocess.check_output("aws s3 ls s3://h24-backup-solr | sort | tail -1 | awk '{print $4}'", shell=True)
+        print 'Latest backup is: %s' % filename
+    else:
+        filename = args.filename
+
+    subprocess.check_call(["aws", "s3", "cp", "s3://%s/%s" % (args.bucket, filename), args.location])
 
     snapshot_directory = "%s/snapshot.%s" % (args.location, time.time())
-    os.mkdir(snapshot_directory)
+    os.makedirs(snapshot_directory)
 
     print 'Extracting files to: %s' % snapshot_directory
-    tar = tarfile.open("%s/%s" % (args.location, args.filename))
+    tar = tarfile.open("%s/%s" % (args.location, filename))
     tar.extractall(path=snapshot_directory)
     tar.close()
 
@@ -77,7 +90,7 @@ def restore(args):
                     shutil.rmtree(os.path.join(root, d))
 
             print '--- Restoring index data'
-            for root, dirs, files in os.walk(snapshot_directory):
+            for root, dirs, files in os.walk(os.path.join(snapshot_directory, subdirname)):
                 for f in files:
                     shutil.copy(os.path.join(root, f), "%s/%s/data/index/" % (args.solrpath, subdirname))
 
@@ -88,15 +101,17 @@ def restore(args):
     shutil.rmtree(snapshot_directory)
 
     print 'Removing backup archvie'
-    os.remove("%s/%s" % (args.location, args.filename))
+    os.remove("%s/%s" % (args.location, filename))
 
     print '+++ done'
+
 
 def list(args):
     print 'List of available backups'
     subprocess.check_call(["aws", "s3", "ls", "s3://" + args.bucket])
 
-def main():
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Backup Solr to S3', add_help=False)
 
     subparsers = parser.add_subparsers(help='sub-command help')
@@ -110,7 +125,7 @@ def main():
 
     parser_restore = subparsers.add_parser('restore', help='a help')
     parser_restore.add_argument('bucket', help='S3 bucket')
-    parser_restore.add_argument('filename', help='Remote filename to restore')
+    parser_restore.add_argument('filename', help='Remote filename to restore | "latest" to use latest file on S3')
     parser_restore.add_argument('--location', dest='location', default='/tmp')
     parser_restore.add_argument('--solrpath', dest='solrpath', default='/var/solr/data')
     parser_restore.set_defaults(func=restore)
@@ -121,5 +136,3 @@ def main():
 
     args = parser.parse_args()
     args.func(args)
-
-if __name__ == '__main__': main()
