@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='solrbackups3',
-    version='0.2.5',
+    version='0.3',
     url='https://github.com/yegortokmakov/solrbackups3',
     license='MIT',
     author='yegortokmakov',

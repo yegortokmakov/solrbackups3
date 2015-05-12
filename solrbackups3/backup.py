@@ -48,7 +48,7 @@ def backup(args):
 def restore(args):
     print 'Downloading backup'
     if args.filename == 'latest':
-        filename = subprocess.check_output("aws s3 ls s3://h24-backup-solr | sort | tail -1 | awk '{print $4}'", shell=True)
+        filename = subprocess.check_output("aws s3 ls s3://h24-backup-solr | sort | tail -1 | awk '{print $4}' | tr -d '\n'", shell=True)
         print 'Latest backup is: %s' % filename
     else:
         filename = args.filename
