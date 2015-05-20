@@ -12,11 +12,11 @@ or, if you are not installing in a `virtualenv`:
     $ sudo pip install solrbackups3
 
 If you have the solrbackups3 installed and want to upgrade to the latest version
-you can run::
+you can run:
 
     $ pip install --upgrade solrbackups3
 
 ## TODO
-- select cores
 - amount of backups to save
 - dont pass Namespace objects in methods
+- add usage doc
